@@ -235,6 +235,7 @@ procedure send_reset_pass_token (
    n number;
    v_token varchar2(120);
    v_app_name varchar2(120);
+   v_from_address varchar2(120);
 begin 
    arcsql.debug('send_reset_pass_token: '||p_email);
    select count(*) into n from saas_auth where email=lower(p_email);
@@ -255,10 +256,12 @@ begin
           last_session_id=v('APP_SESSION')
     where email=lower(p_email);
    v_app_name := apex_application.g_flow_name;
-   sendgrid.send_message(
-      to_address=>p_email,
-      subject=>'Thanks for using '||v_app_name||'!',
-      message=>v_app_name||': The secret token you need to reset your password is '||v_token);
+   v_from_address := arcsql.get_setting('saas_from_address');
+   send_email (
+      p_to=>p_email,
+      p_from=>v_from_address,
+      p_subject=>'Thanks for using '||v_app_name||'!',
+      p_body=>v_app_name||': The secret token you need to reset your password is '||v_token);
 end;
 
 procedure reset_password (
