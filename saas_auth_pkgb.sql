@@ -22,6 +22,31 @@
 
 create or replace package body saas_auth_pkg as
 
+procedure set_error_message (p_message in varchar2) is 
+begin 
+   apex_error.add_error (
+      p_message          => p_message,
+      p_display_location => apex_error.c_inline_in_notification );
+end;
+
+procedure count_request (
+  p_request_key in varchar2,
+  p_sub_key in varchar2 default null) is 
+begin
+  arcsql.count_request(
+    p_request_key=>p_request_key,
+    p_sub_key=>p_sub_key);
+end;
+
+procedure raise_request_rate_exceeded is 
+begin 
+  if arcsql.get_request_count(p_request_key=>'saas_auth', p_min=>1) > 20 then
+     set_error_message('Allowable rate of request has been exceeded.');
+     raise_application_error(-20001, 'Allowable rate of request has been exceeded.');
+     apex_util.pause(1);
+  end if;
+end;
+
 function custom_hash (
    p_user_name in varchar2,
    p_password in varchar2) return raw is
@@ -35,13 +60,6 @@ begin
    -- and then set up a new password.
    v_password := arcsql.encrypt_sha256(v_salt || p_password || p_user_name);
    return v_password;
-end;
-
-procedure set_error_message (p_message in varchar2) is 
-begin 
-   apex_error.add_error (
-      p_message          => p_message,
-      p_display_location => apex_error.c_inline_in_notification );
 end;
 
 procedure raise_email_already_exists (
@@ -144,8 +162,8 @@ procedure create_account (
    v_user_id number;
 begin
    arcsql.debug('create_account: '||lower(p_email));
-   --    * Build this.
-   -- arcsql.raise_rate_limit(p_key=>'create_account', p_per_minute=>200, p_per_hour=>1000);
+   count_request(p_request_key=>'saas_auth', p_sub_key=>'create_account');
+   raise_request_rate_exceeded;
    raise_user_already_exists(v_user_name);
    if p_password != p_confirm then 
       set_error_message('Passwords do not match.');
@@ -171,6 +189,8 @@ function custom_auth (
    v_username varchar2(120) := lower(p_username);
 begin
    arcsql.debug('custom_auth: '||v_username||', '||p_password);
+   count_request(p_request_key=>'saas_auth', p_sub_key=>'custom_auth');
+   raise_request_rate_exceeded;
    -- First, check to see if the user is in the user table and look up their password
    begin
      select password
@@ -238,6 +258,8 @@ procedure send_reset_pass_token (
    v_from_address varchar2(120);
 begin 
    arcsql.debug('send_reset_pass_token: '||p_email);
+   count_request(p_request_key=>'saas_auth', p_sub_key=>'send_reset_pass_token');
+   raise_request_rate_exceeded;
    select count(*) into n from saas_auth where email=lower(p_email);
    if n=0 then 
       set_error_message('Email not found. Check the address and try again or contact support.');
@@ -272,6 +294,8 @@ procedure reset_password (
    n number;
    v_original_email varchar2(120);
 begin
+   count_request(p_request_key=>'saas_auth', p_sub_key=>'reset_password');
+   raise_request_rate_exceeded;
    select count(*) into n 
      from saas_auth 
     where reset_pass_token=p_token 
