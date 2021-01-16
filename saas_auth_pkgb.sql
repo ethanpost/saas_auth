@@ -29,20 +29,11 @@ begin
       p_display_location => apex_error.c_inline_in_notification );
 end;
 
-procedure count_request (
-  p_request_key in varchar2,
-  p_sub_key in varchar2 default null) is 
-begin
-  arcsql.count_request(
-    p_request_key=>p_request_key,
-    p_sub_key=>p_sub_key);
-end;
-
-procedure raise_request_rate_exceeded is 
+procedure raise_auth_request_rate_exceeded is 
 begin 
   if arcsql.get_request_count(p_request_key=>'saas_auth', p_min=>1) > 20 then
-     set_error_message('Allowable rate of request has been exceeded.');
-     raise_application_error(-20001, 'Allowable rate of request has been exceeded.');
+     set_error_message('Allowed request rate exceeded.');
+     raise_application_error(-20001, 'Allowed request rate exceeded.');
      apex_util.pause(1);
   end if;
 end;
@@ -55,9 +46,6 @@ function custom_hash (
    v_password varchar2(100);
    v_salt     varchar2(100) := arcsql.get_setting('saas_auth_salt');
 begin
-   -- If email address is used we will always need to use original_email or email change would break password.
-   -- To change email we will likely need to provide a link which allows the user to auth
-   -- and then set up a new password.
    v_password := arcsql.encrypt_sha256(v_salt || p_password || p_user_name);
    return v_password;
 end;
@@ -113,12 +101,10 @@ begin
    insert into saas_auth (
       user_name,
       email, 
-      original_email,
       role_id,
       password) values (
       v_user_name,
       v_email, 
-      v_email,
       1,
       v_password);
 end;
@@ -162,15 +148,15 @@ procedure create_account (
    v_user_id number;
 begin
    arcsql.debug('create_account: '||lower(p_email));
-   count_request(p_request_key=>'saas_auth', p_sub_key=>'create_account');
-   raise_request_rate_exceeded;
+   arcsql.count_request(p_request_key=>'saas_auth', p_sub_key=>'create_account');
+   raise_auth_request_rate_exceeded;
    raise_user_already_exists(v_user_name);
    if p_password != p_confirm then 
       set_error_message('Passwords do not match.');
       raise_application_error(-20001, 'Passwords do not match.');
    end if;
    raise_bad_password(p_password);
-   add_user(
+   add_user (
       p_user_name=>v_user_name,
       p_email=>v_email,
       p_password=>p_password);
@@ -189,8 +175,8 @@ function custom_auth (
    v_username varchar2(120) := lower(p_username);
 begin
    arcsql.debug('custom_auth: '||v_username||', '||p_password);
-   count_request(p_request_key=>'saas_auth', p_sub_key=>'custom_auth');
-   raise_request_rate_exceeded;
+   arcsql.count_request(p_request_key=>'saas_auth', p_sub_key=>'custom_auth');
+   raise_auth_request_rate_exceeded;
    -- First, check to see if the user is in the user table and look up their password
    begin
      select password
@@ -258,8 +244,8 @@ procedure send_reset_pass_token (
    v_from_address varchar2(120);
 begin 
    arcsql.debug('send_reset_pass_token: '||p_email);
-   count_request(p_request_key=>'saas_auth', p_sub_key=>'send_reset_pass_token');
-   raise_request_rate_exceeded;
+   arcsql.count_request(p_request_key=>'saas_auth', p_sub_key=>'send_reset_pass_token');
+   raise_auth_request_rate_exceeded;
    select count(*) into n from saas_auth where email=lower(p_email);
    if n=0 then 
       set_error_message('Email not found. Check the address and try again or contact support.');
@@ -292,27 +278,27 @@ procedure reset_password (
    p_confirm in varchar2) is 
    v_hashed_password varchar2(100);
    n number;
-   v_original_email varchar2(120);
+   v_user_name varchar2(120);
 begin
-   count_request(p_request_key=>'saas_auth', p_sub_key=>'reset_password');
-   raise_request_rate_exceeded;
+   arcsql.count_request(p_request_key=>'saas_auth', p_sub_key=>'reset_password');
+   raise_auth_request_rate_exceeded;
    select count(*) into n 
      from saas_auth 
     where reset_pass_token=p_token 
       and reset_pass_expire > sysdate;
    if n=0 then 
-      set_error_message('Invalid or expired password reset token.');
-      raise_application_error(-20001, 'Invalid or expired password reset token.');
+      set_error_message('Your token is either expired of invalid.');
+      raise_application_error(-20001, 'Invalid password reset token.');
    end if;
    if p_password != p_confirm then 
       set_error_message('Passwords do not match.');
       raise_application_error(-20001, 'Passwords do not match.');
    end if;
    raise_bad_password(p_password);
-   select lower(original_email) into v_original_email 
+   select lower(user_name) into v_user_name 
      from saas_auth 
     where reset_pass_token=p_token;
-   v_hashed_password := custom_hash(v_original_email, p_password);
+   v_hashed_password := custom_hash(v_user_name, p_password);
    update saas_auth
       set password=v_hashed_password,
           reset_pass_expire=null,

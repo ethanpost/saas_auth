@@ -45,8 +45,6 @@ begin
       role_id number,
       user_name varchar2(120) not null,
       email varchar2(120) not null,
-      original_email varchar2(120) not null,
-      remember_email varchar2(120) default null,
       password varchar2(120) not null,
       last_session_id varchar2(120) default null,
       last_login date default null,
