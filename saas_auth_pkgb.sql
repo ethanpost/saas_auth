@@ -12,9 +12,7 @@
    * Send email anytime password or email is changed.
    * Add config parms for password attributes and anything else I can think of.
    * Add "we sent you a secret token X minutes ago..."
-   * Build ArcSQL rate limiter.
    * Have I been pwnd integration.
-   * Consider using original email and logging all email changes.
    * Update form so email and user name are shown or only email which then is used as user name.
    * Add terms of service agreement.
    * Add a button which allows user to temporarily login without credentials for testing/preview.
@@ -52,11 +50,13 @@ end;
 
 procedure raise_email_already_exists (
    p_user_name in varchar2) is 
+   -- Raises error if the email address exists.
    n number;
 begin 
    select count(*) into n 
       from saas_auth
-     where email=lower(p_user_name);
+     where email=lower(p_user_name)
+       and app_alias=arcsql.apex_get_app_alias;
    if n > 0 then 
       set_error_message('User is already registered.');
       raise_application_error(-20001, 'User is already registered.');
@@ -65,11 +65,13 @@ end;
 
 procedure raise_user_already_exists (
    p_user_name in varchar2) is 
+   -- Raises error if user exists.
    n number;
 begin 
    select count(*) into n 
       from saas_auth
-     where user_name=lower(p_user_name);
+     where user_name=lower(p_user_name)
+       and app_alias=arcsql.apex_get_app_alias;
    if n > 0 then 
       set_error_message('User name already exists. Try using a different one.');
       raise_application_error(-20001, 'User name already exists.');
@@ -100,10 +102,12 @@ begin
    v_password := custom_hash(p_user_name=>p_user_name, p_password=>p_password);
    insert into saas_auth (
       user_name,
+      app_alias,
       email, 
       role_id,
       password) values (
       v_user_name,
+      arcsql.apex_get_app_alias,
       v_email, 
       1,
       v_password);
@@ -112,7 +116,9 @@ end;
 procedure delete_user (
    p_user_name in varchar2) is 
 begin 
-   delete from saas_auth where user_name=lower(p_user_name);
+   delete from saas_auth 
+    where user_name=lower(p_user_name)
+      and app_alias=arcsql.apex_get_app_alias;
 end;
 
 procedure raise_bad_password (
@@ -182,7 +188,8 @@ begin
      select password
        into v_stored_password
        from saas_auth
-      where user_name=v_username;
+      where user_name=v_username
+        and app_alias=arcsql.apex_get_app_alias;
    exception 
       when others then 
          arcsql.debug('custom_auth: '||dbms_utility.format_error_stack);
@@ -200,7 +207,8 @@ begin
              last_login=sysdate,
              login_count=login_count+1,
              last_session_id=v('APP_SESSION')
-       where user_name=v_username;
+       where user_name=v_username 
+         and app_alias=arcsql.apex_get_app_alias;
       arcsql.debug('custom_auth: true');
       return true;
    else
@@ -210,7 +218,8 @@ begin
              last_failed_login=sysdate,
              failed_login_count=failed_login_count+1,
              last_session_id=v('APP_SESSION')
-       where user_name=v_username;
+       where user_name=v_username
+         and app_alias=arcsql.apex_get_app_alias;
       arcsql.debug('custom_auth: false');
       return false;
    end if;
@@ -263,7 +272,7 @@ begin
           reset_pass_expire=sysdate+15/1440,
           last_session_id=v('APP_SESSION')
     where email=lower(p_email);
-   v_app_name := apex_application.g_flow_name;
+   v_app_name := arcsql.apex_get_app_name;
    v_from_address := arcsql.get_setting('saas_from_address');
    send_email (
       p_to=>p_email,
