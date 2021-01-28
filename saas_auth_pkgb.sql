@@ -315,25 +315,41 @@ begin
     where reset_pass_token=p_token;
 end;
 
+function is_signed_in return boolean is 
+begin 
+   if lower(v('APP_USER')) not in ('guest', 'nobody') then 
+      return true;
+   else 
+      return false;
+   end if;
+end;
+
+function is_not_signed_in return boolean is 
+begin 
+   if lower(v('APP_USER')) in ('guest', 'nobody') then 
+      return true;
+   else 
+      return false;
+   end if;
+end;
+
 function is_admin (
-    p_user_name in varchar2)
-  return boolean
-is
-  l_is_admin varchar2(1);
+   p_user_id in number) return boolean is
+   x varchar2(1);
 begin
-  select 'Y'
-    into l_is_admin
+   select 'Y'
+    into x
     from saas_auth a
-   where a.email=lower(p_user_name)
-     and a.role_id=2;
-  return true;
+   where user_id=p_user_id
+     and a.role_id=(select role_id from saas_auth_role where role_name='admin');
+   return true;
 exception
-when no_data_found then
-  return false;
+   when no_data_found then
+      return false;
 end;
 
 --    * Not implemented yet.
-function is_user(
+function is_user (
     p_user_name in varchar2)
   return boolean
 is

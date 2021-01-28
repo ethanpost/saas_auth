@@ -31,8 +31,14 @@ create or replace package saas_auth_pkg as
       p_password in varchar2,
       p_confirm in varchar2);
 
+   -- This is set up in APEX as a custom authorization.
+   function is_signed_in return boolean;
+   
+   -- This is set up in APEX as a custom authorization.
+   function is_not_signed_in return boolean;
+
    function is_admin (
-      p_user_name in varchar2) return boolean;
+      p_user_id in number) return boolean;
 
    function is_user (
       p_user_name in varchar2) return boolean;
