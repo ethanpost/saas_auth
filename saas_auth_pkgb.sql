@@ -105,12 +105,14 @@ begin
       app_alias,
       email, 
       role_id,
-      password) values (
+      password,
+      last_session_id) values (
       v_user_name,
       arcsql.apex_get_app_alias,
       v_email, 
       1,
-      v_password);
+      v_password,
+      v('APP_SESSION'));
 end;
 
 procedure delete_user (
@@ -364,6 +366,35 @@ begin
 exception
 when no_data_found then
   return false;
+end;
+
+procedure login_with_new_demo_account is 
+   v_user varchar2(120);
+   v_pass varchar2(120);
+   n number;
+begin 
+   -- Generate a random demo user and password.
+   v_user := 'Demo'||arcsql.str_random(5, 'a');
+   v_pass := 'FooBar'||arcsql.str_random(5)||'@foo$';
+   select count(*) into n 
+     from saas_auth 
+    where last_session_id=v('APP_SESSION') 
+      and created >= sysdate-(.1/1440);
+   if n = 0 then 
+      saas_auth_pkg.create_account (
+         p_user_name=>v_user,
+         p_email=>v_user||'@null.com',
+         p_password=>v_pass,
+         p_confirm=>v_pass);
+      apex_authentication.login(
+         p_username => v_user,
+         p_password => v_pass);
+      post_auth;
+   else 
+      apex_error.add_error ( 
+         p_message=>'Please wait 10 seconds before trying to create a new account.',
+         p_display_location=>apex_error.c_inline_in_notification);
+   end if;
 end;
 
 end;

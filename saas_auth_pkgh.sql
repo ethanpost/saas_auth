@@ -43,6 +43,8 @@ create or replace package saas_auth_pkg as
    function is_user (
       p_user_name in varchar2) return boolean;
 
+   procedure login_with_new_demo_account;
+
 end;
 /
 
