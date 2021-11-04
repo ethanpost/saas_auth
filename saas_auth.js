@@ -28,11 +28,4 @@ function saas_auth_show(r) {
    }
 }
 
-function show_register_account {
-    $(REGISTER_REGION).show();
-    $(LOGIN_REGION).hide();
-    $(LOG_IN_EXTRA_REGION).hide();
-    $(CHANGE_PASSWORD_REGION).hide();
-    $(FORGOT_PASSWORD_REGION).hide();
-}
 
