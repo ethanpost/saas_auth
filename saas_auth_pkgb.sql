@@ -275,7 +275,7 @@ begin
           last_session_id=v('APP_SESSION')
     where email=lower(p_email);
    v_app_name := arcsql.apex_get_app_name;
-   v_from_address := arcsql.get_setting('saas_from_address');
+   v_from_address := arcsql.get_setting('saas_auth_from_address');
    send_email (
       p_to=>p_email,
       p_from=>v_from_address,
