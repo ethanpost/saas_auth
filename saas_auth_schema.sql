@@ -57,6 +57,7 @@ begin
       reset_pass_token varchar2(120),
       reset_pass_expire date default null,
       lock_account varchar2(1) default ''n'',
+      is_test_user varchar2(1) default ''n'',
       created date not null,
       created_by varchar2(120) not null,
       updated date not null,
