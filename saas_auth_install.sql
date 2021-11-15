@@ -25,6 +25,8 @@ whenever sqlerror exit failure;
 
 exec arcsql.set_app_version('saas_auth', .01);
 
+-- Add a copy of this file in your app repo and make sure it installs after this one.
+@saas_auth_config.sql
 @saas_auth_schema.sql 
 @saas_auth_pkgh.sql 
 @saas_auth_pkgb.sql 
