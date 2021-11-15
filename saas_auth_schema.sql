@@ -45,7 +45,6 @@ begin
       role_id number,
       user_name varchar2(120) not null,
       email varchar2(120) not null,
-      app_alias varchar2(120) not null,
       -- App should check here to see if any custom init code needs to be run.
       app_init date default null,
       password varchar2(120) not null,
@@ -64,7 +63,6 @@ begin
       updated_by varchar2(120) not null
       )', false);
       execute_sql('alter table saas_auth add constraint pk_saas_auth primary key (user_id)', false);
-      execute_sql('create unique index saas_auth_1 on saas_auth(user_name, app_alias)', false);
       execute_sql('create index saas_auth_2 on saas_auth(role_id)', false);
       execute_sql('alter table saas_auth add constraint saas_auth_fk_role_id foreign key (role_id) references saas_auth_role (role_id) on delete cascade', false);
    end if;

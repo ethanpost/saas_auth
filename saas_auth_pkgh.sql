@@ -9,7 +9,6 @@ create or replace package saas_auth_pkg as
       p_user_name in varchar2,
       p_email in varchar2,
       p_password in varchar2,
-      p_app_alias in varchar2 default null,
       p_is_test_user in boolean default false);
       
    procedure add_test_user (

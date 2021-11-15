@@ -52,11 +52,10 @@ function does_email_already_exist (
    p_email in varchar2) return boolean is
    n number;
 begin
-   arcsql.log('does_email_already_exist: email='||p_email||', alias='||apex_utils.get_app_alias);
+   arcsql.log('does_email_already_exist: email='||p_email);
    select count(*) into n 
       from saas_auth
-     where email=lower(p_email)
-       and app_alias=apex_utils.get_app_alias;
+     where email=lower(p_email);
    if n > 0 then 
       return true;
    else
@@ -79,11 +78,10 @@ function does_user_already_exist (
    p_user_name in varchar2) return boolean is
    n number;
 begin 
-   arcsql.log('does_email_already_exist: user='||p_user_name||', alias='||apex_utils.get_app_alias);
+   arcsql.log('does_email_already_exist: user='||p_user_name);
    select count(*) into n 
       from saas_auth
-     where user_name=lower(p_user_name)
-       and app_alias=apex_utils.get_app_alias;
+     where user_name=lower(p_user_name);
    if n > 0 then 
       return true;
    else
@@ -117,13 +115,10 @@ procedure add_test_user (
    -- If email is not provided it is assumed the user name is an email address.
    p_email in varchar2 default null) is 
 
-   app_alias varchar2(120) := arcsql.get_setting('saas_auth_app_alias');
    v_email varchar2(120) := p_email;
    test_pass varchar2(120);
 begin
-   arcsql.str_raise_not_defined(arcsql.get_setting('saas_auth_app_alias'));
    arcsql.str_raise_not_defined(arcsql.get_setting('saas_auth_test_pass'));
-   app_alias := arcsql.get_setting('saas_auth_app_alias');
    test_pass := arcsql.get_setting('saas_auth_test_pass');
    if v_email is null then 
       v_email := p_user_name;
@@ -133,7 +128,6 @@ begin
          p_user_name=>p_user_name,
          p_email=>v_email,
          p_password=>test_pass,
-         p_app_alias=>app_alias,
          p_is_test_user=>true);
    end if;
 end;
@@ -142,7 +136,6 @@ procedure add_user (
    p_user_name in varchar2,
    p_email in varchar2,
    p_password in varchar2,
-   p_app_alias in varchar2 default null,
    p_is_test_user in boolean default false) is
    v_message varchar2(4000);
    v_password raw(64);
@@ -160,14 +153,12 @@ begin
    end if;
    insert into saas_auth (
       user_name,
-      app_alias,
       email, 
       role_id,
       password,
       last_session_id,
       is_test_user) values (
       v_user_name,
-      apex_utils.get_app_alias,
       v_email, 
       1,
       v_password,
@@ -179,8 +170,7 @@ procedure delete_user (
    p_user_name in varchar2) is 
 begin 
    delete from saas_auth 
-    where user_name=lower(p_user_name)
-      and app_alias=apex_utils.get_app_alias;
+    where user_name=lower(p_user_name);
 end;
 
 procedure raise_bad_password (
@@ -250,8 +240,7 @@ begin
      select password
        into v_stored_password
        from saas_auth
-      where user_name=v_username
-        and app_alias=apex_utils.get_app_alias;
+      where user_name=v_username;
    exception 
       when others then 
          arcsql.debug('custom_auth: '||dbms_utility.format_error_stack);
@@ -269,8 +258,7 @@ begin
              last_login=sysdate,
              login_count=login_count+1,
              last_session_id=v('APP_SESSION')
-       where user_name=v_username 
-         and app_alias=apex_utils.get_app_alias;
+       where user_name=v_username;
       arcsql.debug('custom_auth: true');
       return true;
    else
@@ -280,8 +268,7 @@ begin
              last_failed_login=sysdate,
              failed_login_count=failed_login_count+1,
              last_session_id=v('APP_SESSION')
-       where user_name=v_username
-         and app_alias=apex_utils.get_app_alias;
+       where user_name=v_username;
       arcsql.debug('custom_auth: false');
       return false;
    end if;
