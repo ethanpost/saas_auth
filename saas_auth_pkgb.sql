@@ -42,7 +42,7 @@ function custom_hash (
    -- Returns SHA256 hash we will store in the password field.
    -- User name will be converted to lower-case to ensure consistency.
    v_password varchar2(100);
-   v_salt     varchar2(100) := arcsql.get_setting('saas_auth_salt');
+   v_salt     varchar2(100) := saas_auth_config.saas_auth_salt;
 begin
    v_password := arcsql.encrypt_sha256(v_salt || p_password || p_user_name);
    return v_password;
@@ -118,8 +118,7 @@ procedure add_test_user (
    v_email varchar2(120) := p_email;
    test_pass varchar2(120);
 begin
-   arcsql.str_raise_not_defined(arcsql.get_setting('saas_auth_test_pass'));
-   test_pass := arcsql.get_setting('saas_auth_test_pass');
+   test_pass := saas_auth_config.saas_auth_test_pass;
    if v_email is null then 
       v_email := p_user_name;
    end if;
@@ -322,7 +321,7 @@ begin
           last_session_id=v('APP_SESSION')
     where email=lower(p_email);
    v_app_name := arcsql.apex_get_app_name;
-   v_from_address := arcsql.get_setting('saas_auth_from_address');
+   v_from_address := saas_auth_config.saas_auth_from_address;
    send_email (
       p_to=>p_email,
       p_from=>v_from_address,
