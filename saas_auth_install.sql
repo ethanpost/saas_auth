@@ -30,6 +30,8 @@ exec arcsql.set_app_version('saas_auth', .01);
 @saas_auth_schema.sql 
 @saas_auth_pkgh.sql 
 @saas_auth_pkgb.sql 
+-- This file can be copied and modified within your app.
+@saas_auth_events.sql
 
 exec arcsql.confirm_app_version('saas_auth');
 

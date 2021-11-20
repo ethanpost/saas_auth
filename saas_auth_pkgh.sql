@@ -36,9 +36,6 @@ create or replace package saas_auth_pkg as
       p_password in varchar2,
       p_confirm in varchar2);
       
-   function does_user_already_exist (
-      p_user_name in varchar2) return boolean;
-      
    function does_email_already_exist (
       p_email in varchar2) return boolean;
 
@@ -55,6 +52,8 @@ create or replace package saas_auth_pkg as
       p_user_name in varchar2) return boolean;
 
    procedure login_with_new_demo_account;
+
+   function get_user_id (p_user_name in varchar2) return number;
 
 end;
 /
