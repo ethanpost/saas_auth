@@ -82,11 +82,12 @@ end;
 function is_user (
    p_user_name in varchar2) return boolean is
    n number;
+   v_lower_user_name saas_auth.user_name%type := lower(p_user_name);
 begin 
-   arcsql.debug('is_user: '||p_user_name);
+   arcsql.debug('is_user: '||v_lower_user_name);
    select count(*) into n 
       from saas_auth
-     where user_name=lower(p_user_name);
+     where user_name=v_lower_user_name;
    if n = 1 then 
       return true;
    else
@@ -121,11 +122,12 @@ end;
 
 function get_user_id (p_user_name in varchar2) return number is 
     n number;
+    v_lower_user_name saas_auth.user_name%type := lower(p_user_name);
 begin 
-   if is_user(p_user_name) then 
-       select user_id into n from saas_auth where user_name = p_user_name;
+   if is_user(v_lower_user_name) then 
+       select user_id into n from saas_auth where user_name = v_lower_user_name;
    else 
-      raise_application_error(-20001, 'get_user_id: User '''||p_user_name||''' not found.');
+      raise_application_error(-20001, 'get_user_id: User '''||v_lower_user_name||''' not found.');
    end if;
    return n;
 end;
